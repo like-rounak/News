@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Button } from 'react-native';
-import { Card, Icon } from 'react-native-elements';
+import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
+import { Card } from 'react-native-elements';
 import { getTopHeadlines } from '../services/newsApi';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -10,17 +10,20 @@ const HomeScreen = ({ navigation }) => {
   const [articles, setArticles] = useState([]);
   const [category, setCategory] = useState('general');
   const [sortOrder, setSortOrder] = useState('publishedAt');
+  const [searchQuery, setSearchQuery] = useState('');
   const [isCategoryModalVisible, setCategoryModalVisible] = useState(false);
   const [isSortModalVisible, setSortModalVisible] = useState(false);
 
   useEffect(() => {
     const fetchArticles = async () => {
-      const fetchedArticles = await getTopHeadlines();
+      const fetchedArticles = await getTopHeadlines(category, sortOrder);
       setArticles(fetchedArticles);
     };
 
     fetchArticles();
-  }, []);
+  }, [category, sortOrder]);
+
+  const filteredArticles = articles.filter(article => article.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const renderItem = ({ item }) => (
     <TouchableOpacity onPress={() => navigation.navigate('Article', { article: item })}>
@@ -28,11 +31,7 @@ const HomeScreen = ({ navigation }) => {
         <Card.Title>{item.title}</Card.Title>
         <Card.Image source={{ uri: item.urlToImage }} />
         <Text style={{ marginBottom: 10 }}>{item.description}</Text>
-        <Button
-          icon={<Icon name='code' color='#ffffff' />}
-          buttonStyle={{ borderRadius: 0, marginLeft: 0, marginRight: 0, marginBottom: 0 }}
-          title='VIEW NOW' 
-        />
+        <Text style={{ marginBottom: 10, fontStyle: 'italic' }}>{new Date(item.publishedAt).toLocaleDateString()}</Text>
       </Card>
     </TouchableOpacity>
   );
@@ -40,12 +39,22 @@ const HomeScreen = ({ navigation }) => {
   return (
     <View style={{ flex: 1 }}>
       <Navbar />
+      <TextInput
+        style={styles.searchBar}
+        placeholder="Search..."
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+      />
       <View style={{ padding: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
-        <Button title="Select Category" onPress={() => setCategoryModalVisible(true)} />
-        <Button title="Sort By" onPress={() => setSortModalVisible(true)} />
+        <TouchableOpacity onPress={() => setCategoryModalVisible(true)}>
+          <Text style={styles.buttonText}>Select Category</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setSortModalVisible(true)}>
+          <Text style={styles.buttonText}>Sort By</Text>
+        </TouchableOpacity>
       </View>
       <FlatList
-        data={articles}
+        data={filteredArticles}
         keyExtractor={(item) => item.url}
         renderItem={renderItem}
       />
@@ -76,5 +85,19 @@ const HomeScreen = ({ navigation }) => {
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  searchBar: {
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    borderRadius: 5,
+    margin: 10,
+    paddingLeft: 10,
+  },
+  buttonText: {
+    color: 'blue',
+  },
+});
 
 export default HomeScreen;
